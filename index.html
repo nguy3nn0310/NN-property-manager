@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NN Rental Manager</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header class="topbar">
+  <div>
+    <div class="brand">NN Rental Manager</div>
+    <div class="sub">10-unit rental management system</div>
+  </div>
+  <div class="top-actions">
+    <span id="sessionLabel" class="pill">Signed out</span>
+    <button id="logoutBtn" class="ghost hidden">Log out</button>
+  </div>
+</header>
+
+<main class="shell">
+  <section id="loginView" class="auth-wrap">
+    <div class="card auth-card">
+      <p class="eyebrow">Secure portal</p>
+      <h1>Manage rent, repairs, deposits, and applications.</h1>
+      <p class="muted">Secure portal for rent, repairs, deposits, applications, and tenant messages.</p>
+      <div class="role-switch">
+        <button class="role active" data-role="tenant">Tenant</button>
+        <button class="role" data-role="owner">Owner / Admin</button>
+      </div>
+      <form id="loginForm" class="stack">
+        <label>Email<input id="loginEmail" type="email" required /></label>
+        <label>Password<input id="loginPassword" type="password" required /></label>
+        <button type="submit">Sign in</button>
+      </form>
+      <div id="setupNotice" class="demo-box">
+        Enter your Supabase URL and publishable key in <code>config.js</code>, then create owner/tenant accounts in Supabase Auth.
+      </div>
+    </div>
+  </section>
+
+  <section id="tenantView" class="hidden">
+    <div class="hero card">
+      <div><p class="eyebrow">Tenant portal</p><h1 id="tenantGreeting">Welcome</h1><p id="tenantAddress" class="muted"></p></div>
+      <div class="summary-grid">
+        <div class="metric"><span>Rent</span><b id="tenantRent">$0</b></div>
+        <div class="metric"><span>Balance</span><b id="tenantBalance">$0</b></div>
+        <div class="metric"><span>Deposit</span><b id="tenantDeposit">$0</b></div>
+      </div>
+    </div>
+    <div class="tabs" id="tenantTabs">
+      <button class="tab active" data-target="tenantHome">Account</button>
+      <button class="tab" data-target="payRent">Pay Rent</button>
+      <button class="tab" data-target="maintenance">Maintenance</button>
+      <button class="tab" data-target="messages">Messages</button>
+    </div>
+
+    <div id="tenantHome" class="panel active grid-2">
+      <div class="card"><h2>Ledger</h2><div id="tenantLedger"></div></div>
+      <div class="card"><h2>Open Requests</h2><div id="tenantRequests"></div></div>
+    </div>
+
+    <div id="payRent" class="panel">
+      <div class="card narrow"><h2>Pay Rent</h2>
+        <form id="rentForm" class="stack">
+          <label>Amount<input id="rentAmount" type="number" step="0.01" min="1" required /></label>
+          <label>Payment method<select id="rentMethod"><option>ACH / eCheck</option><option>Debit Card</option><option>Credit Card</option></select></label>
+          <button type="submit">Continue to Payment</button>
+        </form>
+        <div id="rentNotice" class="notice">Payment will open secure Stripe Checkout when payments are enabled.</div>
+      </div>
+    </div>
+
+    <div id="maintenance" class="panel">
+      <div class="card narrow"><h2>Report a Repair</h2>
+        <form id="repairForm" class="stack">
+          <label>Category<select id="repairCategory"><option>Plumbing</option><option>Electrical</option><option>HVAC</option><option>Appliance</option><option>Roof / Leak</option><option>Other</option></select></label>
+          <label>Priority<select id="repairPriority"><option>Normal</option><option>Urgent</option><option>Emergency</option></select></label>
+          <label>Problem<textarea id="repairDescription" required></textarea></label>
+          <label>Photo URL (optional)<input id="repairPhoto" placeholder="https://..." /></label>
+          <button type="submit">Send Request</button>
+        </form>
+      </div>
+    </div>
+
+    <div id="messages" class="panel">
+      <div class="card narrow"><h2>Message Owner</h2>
+        <div id="tenantMessages" class="messages"></div>
+        <form id="tenantMessageForm" class="message-form"><input id="tenantMessageText" placeholder="Type a message..." required><button>Send</button></form>
+      </div>
+    </div>
+  </section>
+
+  <section id="ownerView" class="hidden">
+    <div class="hero card">
+      <div><p class="eyebrow">Owner / Admin</p><h1>Portfolio Dashboard</h1><p class="muted">10 rentals • tenants • balances • deposits • repairs • work orders</p></div>
+      <div class="summary-grid four">
+        <div class="metric"><span>Occupied</span><b id="ownerOccupied">0/10</b></div>
+        <div class="metric"><span>Rent Due</span><b id="ownerDue">$0</b></div>
+        <div class="metric"><span>Deposits</span><b id="ownerDeposits">$0</b></div>
+        <div class="metric"><span>Open Repairs</span><b id="ownerRepairs">0</b></div>
+      </div>
+    </div>
+    <div class="tabs" id="ownerTabs">
+      <button class="tab active" data-target="properties">Properties</button>
+      <button class="tab" data-target="workOrders">Work Orders</button>
+      <button class="tab" data-target="applications">Applications</button>
+      <button class="tab" data-target="ledger">Ledger</button>
+      <button class="tab" data-target="ownerMessages">Messages</button>
+    </div>
+
+    <div id="properties" class="panel active"><div id="propertyGrid" class="property-grid"></div></div>
+    <div id="workOrders" class="panel"><div class="card"><h2>Maintenance / Work Orders</h2><div class="table-wrap"><table><thead><tr><th>ID</th><th>Unit</th><th>Issue</th><th>Priority</th><th>Status</th><th>Vendor Cost</th><th>Tenant Charge</th><th>Actions</th></tr></thead><tbody id="workOrderBody"></tbody></table></div></div></div>
+    <div id="applications" class="panel"><div class="card"><h2>Rental Applications</h2><div class="table-wrap"><table><thead><tr><th>Name</th><th>Unit</th><th>Income</th><th>Move-in</th><th>Status</th><th>Action</th></tr></thead><tbody id="applicationBody"></tbody></table></div></div></div>
+    <div id="ledger" class="panel"><div class="card"><h2>Rent & Deposits</h2><div class="table-wrap"><table><thead><tr><th>Unit</th><th>Tenant</th><th>Rent</th><th>Balance</th><th>Deposit</th><th>Status</th></tr></thead><tbody id="ledgerBody"></tbody></table></div></div></div>
+    <div id="ownerMessages" class="panel"><div class="card"><h2>Tenant Messages</h2><div id="ownerMessageThreads"></div></div></div>
+  </section>
+
+  <section id="applyView" class="public-apply">
+    <div class="card">
+      <p class="eyebrow">Public application</p><h2>Apply for a Rental</h2>
+      <form id="applicationForm" class="form-grid">
+        <label>Full name<input id="appName" required /></label>
+        <label>Email<input id="appEmail" type="email" required /></label>
+        <label>Phone<input id="appPhone" required /></label>
+        <label>Unit<select id="appUnit"></select></label>
+        <label>Monthly income<input id="appIncome" type="number" min="0" /></label>
+        <label>Move-in date<input id="appMoveDate" type="date" /></label>
+        <label class="full">Message<textarea id="appMessage"></textarea></label>
+        <button class="full" type="submit">Submit Application</button>
+      </form>
+      <div id="appResult"></div>
+    </div>
+  </section>
+</main>
+<footer>NN Rental Manager • Secure starter for up to 10 rental units</footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
